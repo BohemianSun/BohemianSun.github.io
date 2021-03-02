@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ThreadPoolTaskExecutor和ThreadPoolExecutor | Stray Birds</title><meta name="keywords" content="随笔 总结 技术栈"><meta name="author" content="Owen"><meta name="copyright" content="Owen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><meta name="description" content="ThreadPoolTaskExecutor和ThreadPoolExecutor之前工作中发现有同事在使用线程池的时候经常搞混淆ThreadPoolTaskExecutor和ThreadPoolExecutor，座椅在这里想写一片博客来讲讲这两个线程池的区别以及使用  ThreadPoolExecutor  这个类是JDK中的线程池类，继承自Executor， Executor 顾名思义是专门">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ThreadPoolTaskExecutor和ThreadPoolExecutor">
+<meta property="og:url" content="https://bohemiansun.github.io/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/index.html">
+<meta property="og:site_name" content="Stray Birds">
+<meta property="og:description" content="ThreadPoolTaskExecutor和ThreadPoolExecutor之前工作中发现有同事在使用线程池的时候经常搞混淆ThreadPoolTaskExecutor和ThreadPoolExecutor，座椅在这里想写一片博客来讲讲这两个线程池的区别以及使用  ThreadPoolExecutor  这个类是JDK中的线程池类，继承自Executor， Executor 顾名思义是专门">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%9A%E7%BA%BF%E7%A8%8B.png">
+<meta property="article:published_time" content="2021-02-25T06:16:00.450Z">
+<meta property="article:modified_time" content="2021-02-25T06:54:59.079Z">
+<meta property="article:author" content="Owen">
+<meta property="article:tag" content="随笔 总结 技术栈">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%9A%E7%BA%BF%E7%A8%8B.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://bohemiansun.github.io/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+};
+
+var saveToLocal = {
+  set: function setWithExpiry(key, value, ttl) {
+    const now = new Date()
+    const expiryDay = ttl * 86400000
+    const item = {
+      value: value,
+      expiry: now.getTime() + expiryDay,
+    }
+    localStorage.setItem(key, JSON.stringify(item))
+  },
+
+  get: function getWithExpiry(key) {
+    const itemStr = localStorage.getItem(key)
+
+    if (!itemStr) {
+      return undefined
+    }
+    const item = JSON.parse(itemStr)
+    const now = new Date()
+
+    if (now.getTime() > item.expiry) {
+      localStorage.removeItem(key)
+      return undefined
+    }
+    return item.value
+  }
+}
+
+// https://stackoverflow.com/questions/16839698/jquery-getscript-alternative-in-native-javascript
+const getScript = url => new Promise((resolve, reject) => {
+  const script = document.createElement('script')
+  script.src = url
+  script.async = true
+  script.onerror = reject
+  script.onload = script.onreadystatechange = function() {
+    const loadState = this.readyState
+    if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+    script.onload = script.onreadystatechange = null
+    resolve()
+  }
+  document.head.appendChild(script)
+})</script><script id="config_change">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-02-25 14:54:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(function () {  window.activateDarkMode = function () {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+    }
+  }
+  window.activateLightMode = function () {
+    document.documentElement.setAttribute('data-theme', 'light')
+   if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+    }
+  }
+  const autoChangeMode = 'false'
+  const t = saveToLocal.get('theme')
+  if (autoChangeMode === '1') {
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+    const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+    const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+    if (t === undefined) {
+      if (isLightMode) activateLightMode()
+      else if (isDarkMode) activateDarkMode()
+      else if (isNotSpecified || hasNoSupport) {
+        const now = new Date()
+        const hour = now.getHours()
+        const isNight = hour <= 6 || hour >= 18
+        isNight ? activateDarkMode() : activateLightMode()
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+        if (saveToLocal.get('theme') === undefined) {
+          e.matches ? activateDarkMode() : activateLightMode()
+        }
+      })
+    } else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else if (autoChangeMode === '2') {
+    const now = new Date()
+    const hour = now.getHours()
+    const isNight = hour <= 6 || hour >= 18
+    if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+    else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else {
+    if (t === 'dark') activateDarkMode()
+    else if (t === 'light') activateLightMode()
+  }const asideStatus = saveToLocal.get('aside-status')
+if (asideStatus !== undefined) {
+   if (asideStatus === 'hide') {
+     document.documentElement.classList.add('hide-aside')
+   } else {
+     document.documentElement.classList.remove('hide-aside')
+   }
+}})()</script><meta name="generator" content="Hexo 5.3.0"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/null" onerror="onerror=null;src='https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%B4%E5%83%8F%E7%8C%AB.jpg'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a></div></div></div><hr/></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%9A%E7%BA%BF%E7%A8%8B.png)"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Stray Birds</a></span><div id="menus"><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">ThreadPoolTaskExecutor和ThreadPoolExecutor</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-02-25T06:16:00.450Z" title="发表于 2021-02-25 14:16:00">2021-02-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-02-25T06:54:59.079Z" title="更新于 2021-02-25 14:54:59">2021-02-25</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><hr>
+<h1 id="ThreadPoolTaskExecutor和ThreadPoolExecutor"><a href="#ThreadPoolTaskExecutor和ThreadPoolExecutor" class="headerlink" title="ThreadPoolTaskExecutor和ThreadPoolExecutor"></a>ThreadPoolTaskExecutor和ThreadPoolExecutor</h1><p>之前工作中发现有同事在使用线程池的时候经常搞混淆ThreadPoolTaskExecutor和ThreadPoolExecutor，座椅在这里想写一片博客来讲讲这两个线程池的区别以及使用</p>
+<ol>
+<li>ThreadPoolExecutor</li>
+</ol>
+<p>这个类是JDK中的线程池类，继承自Executor， Executor 顾名思义是专门用来处理多线程相关的一个接口，所有县城相关的类都实现了这个接口，里面有一个execute()方法，用来执行线程，线程池主要提供一个线程队列，队列中保存着所有等待状态的线程。避免了创建与销毁的额外开销，提高了响应的速度。相关的继承实现类图如下。</p>
+<p>一、线程池接口：ExecutorService为线程池接口，提供了线程池生命周期方法，继承自Executor接口，ThreadPoolExecutor为线程池实现类，提供了线程池的维护操作等相关方法，继承自AbstractExecutorService，AbstractExecutorService实现了ExecutorService接口。</p>
+<p>二、线程池的体系结构：<br>java.util.concurrent.Executor 负责线程的使用和调度的根接口<br>     |–ExecutorService 子接口： 线程池的主要接口<br>         |–ThreadPoolExecutor 线程池的实现类<br>         |–ScheduledExceutorService 子接口： 负责线程的调度<br>           |–ScheduledThreadPoolExecutor : 继承ThreadPoolExecutor，实现了ScheduledExecutorService</p>
+<p>三、工具类 ： Executors</p>
+<p>Executors为线程迟工具类，相当于一个工厂类，用来创建合适的线程池，返回ExecutorService类型的线程池。有人如下方法。<br>ExecutorService newFixedThreadPool() : 创建固定大小的线程池<br>ExecutorService newCachedThreadPool() : 缓存线程池，线程池的数量不固定，可以根据需求自动的更改数量。<br>ExecutorService newSingleThreadExecutor() : 创建单个线程池。 线程池中只有一个线程</p>
+<p>ScheduledExecutorService newScheduledThreadPool() : 创建固定大小的线程，可以延迟或定时的执行任务</p>
+<p>其中AbstractExecutorService是他的抽象父类，继承自ExecutorService,ExecutorService 接口扩展Executor接口，增加了生命周期方法。</p>
+<p>实际应用中我一般都比较喜欢使用Exectuors工厂类来创建线程池，里面有五个方法，分别创建不同的线程池，如上，创建一个制定大小的线程池，Exectuors工厂实际上就是调用的ExectuorPoolService的构造方法，传入默认参数。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Executors</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Creates a thread pool that reuses a fixed number of threads</span></span><br><span class="line"><span class="comment">     * operating off a shared unbounded queue.  At any point, at most</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@code</span> nThreads&#125; threads will be active processing tasks.</span></span><br><span class="line"><span class="comment">     * If additional tasks are submitted when all threads are active,</span></span><br><span class="line"><span class="comment">     * they will wait in the queue until a thread is available.</span></span><br><span class="line"><span class="comment">     * If any thread terminates due to a failure during execution</span></span><br><span class="line"><span class="comment">     * prior to shutdown, a new one will take its place if needed to</span></span><br><span class="line"><span class="comment">     * execute subsequent tasks.  The threads in the pool will exist</span></span><br><span class="line"><span class="comment">     * until it is explicitly &#123;<span class="doctag">@link</span> ExecutorService#shutdown shutdown&#125;.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> nThreads the number of threads in the pool</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the newly created thread pool</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IllegalArgumentException if &#123;<span class="doctag">@code</span> nThreads &lt;= 0&#125;</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ExecutorService <span class="title">newFixedThreadPool</span><span class="params">(<span class="keyword">int</span> nThreads)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> ThreadPoolExecutor(nThreads, nThreads,</span><br><span class="line">                                      <span class="number">0L</span>, TimeUnit.MILLISECONDS,</span><br><span class="line">                                      <span class="keyword">new</span> LinkedBlockingQueue&lt;Runnable&gt;());</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Creates a thread pool that maintains enough threads to support</span></span><br><span class="line"><span class="comment">     * the given parallelism level, and may use multiple queues to</span></span><br><span class="line"><span class="comment">     * reduce contention. The parallelism level corresponds to the</span></span><br><span class="line"><span class="comment">     * maximum number of threads actively engaged in, or available to</span></span><br><span class="line"><span class="comment">     * engage in, task processing. The actual number of threads may</span></span><br><span class="line"><span class="comment">     * grow and shrink dynamically. A work-stealing pool makes no</span></span><br><span class="line"><span class="comment">     * guarantees about the order in which submitted tasks are</span></span><br><span class="line"><span class="comment">     * executed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> parallelism the targeted parallelism level</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the newly created thread pool</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IllegalArgumentException if &#123;<span class="doctag">@code</span> parallelism &lt;= 0&#125;</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@since</span> 1.8</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ExecutorService <span class="title">newWorkStealingPool</span><span class="params">(<span class="keyword">int</span> parallelism)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> ForkJoinPool</span><br><span class="line">            (parallelism,</span><br><span class="line">             ForkJoinPool.defaultForkJoinWorkerThreadFactory,</span><br><span class="line">             <span class="keyword">null</span>, <span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>当然，我们也可以直接new ThreadPoolExecutor的构造方法来创建线程池，传入需要的参数。</p>
+<p>2.ThreadPoolTaskExecutor</p>
+<p>这个类则是spring包下的，是sring为我们提供的线程池类，这里重点讲解这个类的用法，可以使用基于xml配置的方式创建</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- spring线程池 --&gt;</span><br><span class="line">    &lt;bean id=<span class="string">&quot;taskExecutor&quot;</span> <span class="class"><span class="keyword">class</span></span>=<span class="string">&quot;org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor&quot;</span>&gt;</span><br><span class="line">        &lt;!-- 核心线程数  --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;corePoolSize&quot;</span> value=<span class="string">&quot;10&quot;</span>/&gt;</span><br><span class="line">        &lt;!-- 最大线程数 --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;maxPoolSize&quot;</span> value=<span class="string">&quot;200&quot;</span>/&gt;</span><br><span class="line">        &lt;!-- 队列最大长度 &gt;=mainExecutor.maxSize --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;queueCapacity&quot;</span> value=<span class="string">&quot;10&quot;</span>/&gt;</span><br><span class="line">        &lt;!-- 线程池维护线程所允许的空闲时间 --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;keepAliveSeconds&quot;</span> value=<span class="string">&quot;20&quot;</span>/&gt;</span><br><span class="line">        &lt;!-- 线程池对拒绝任务(无线程可用)的处理策略 --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;rejectedExecutionHandler&quot;</span>&gt;</span><br><span class="line">            &lt;bean <span class="class"><span class="keyword">class</span></span>=<span class="string">&quot;java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy&quot;</span>/&gt;</span><br><span class="line">        &lt;/property&gt;</span><br><span class="line">    &lt;/bean&gt;</span><br></pre></td></tr></table></figure>
+<p>然后通过自动注入的方式注入线程池，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Resource(name=&quot;taskExecutor&quot;)</span></span><br><span class="line">ThreadPoolTaskExecutor taskExecutor;</span><br><span class="line"><span class="comment">// 或者可以直接@Autowried</span></span><br><span class="line"><span class="meta">@AutoWired</span></span><br><span class="line">ThreadPoolTaskExecutor taskExecutor</span><br></pre></td></tr></table></figure>
+<p>或者是通过配置类的方式配置线程池，然后注入。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ExecturConfig</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Bean(&quot;taskExector&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Executor <span class="title">taskExector</span><span class="params">()</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">        ThreadPoolTaskExecutor executor = <span class="keyword">new</span> ThreadPoolTaskExecutor();</span><br><span class="line">        <span class="keyword">int</span> i = Runtime.getRuntime().availableProcessors();<span class="comment">//获取到服务器的cpu内核</span></span><br><span class="line">        executor.setCorePoolSize(<span class="number">5</span>);<span class="comment">//核心池大小</span></span><br><span class="line">        executor.setMaxPoolSize(<span class="number">100</span>);<span class="comment">//最大线程数</span></span><br><span class="line">        executor.setQueueCapacity(<span class="number">1000</span>);<span class="comment">//队列程度</span></span><br><span class="line">        executor.setKeepAliveSeconds(<span class="number">1000</span>);<span class="comment">//线程空闲时间</span></span><br><span class="line">        executor.setThreadNamePrefix(<span class="string">&quot;tsak-asyn&quot;</span>);<span class="comment">//线程前缀名称</span></span><br><span class="line">        executor.setRejectedExecutionHandler(<span class="keyword">new</span> ThreadPoolExecutor.AbortPolicy());<span class="comment">//配置拒绝策略</span></span><br><span class="line">        <span class="keyword">return</span> executor;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>上面注解中已经注释了参数的详解，这里重点讲解一下spring线程池的拒绝策略和处理流程。</p>
+<ul>
+<li>拒绝策略</li>
+</ul>
+<p>rejectedExectutionHandler参数字段用于配置绝策略，常用拒绝策略如下</p>
+<p>AbortPolicy：用于被拒绝任务的处理程序，它将抛出RejectedExecutionException</p>
+<p>CallerRunsPolicy：用于被拒绝任务的处理程序，它直接在execute方法的调用线程中运行被拒绝的任务。</p>
+<p>DiscardOldestPolicy：用于被拒绝任务的处理程序，它放弃最旧的未处理请求，然后重试execute。</p>
+<p>DiscardPolicy：用于被拒绝任务的处理程序，默认情况下它将丢弃被拒绝的任务。</p>
+<ul>
+<li>处理流程</li>
+</ul>
+<p>1.查看核心线程池是否已满，不满就创建一条线程执行任务，否则执行第二步。</p>
+<p>2.查看任务队列是否已满，不满就将任务存储在任务队列中，否则执行第三步。</p>
+<p>3.查看线程池是否已满，即就是是否达到最大线程池数，不满就创建一条线程执行任务，否则就按照策略处理无法执行的任务。</p>
+<p>配置类方式</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomThreadPoolConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> ThreadPoolTaskExecutor <span class="title">taskThreadPool</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        ThreadPoolTaskExecutor executor = <span class="keyword">new</span> ThreadPoolTaskExecutor();</span><br><span class="line">        <span class="comment">// 核心线程数目</span></span><br><span class="line">        executor.setCorePoolSize(<span class="number">8</span>);</span><br><span class="line">        <span class="comment">// 指定最大线程数</span></span><br><span class="line">        executor.setMaxPoolSize(<span class="number">32</span>);</span><br><span class="line">        <span class="comment">// 线程名称前缀</span></span><br><span class="line">        executor.setThreadNamePrefix(<span class="string">&quot;Ila_Service_ThreadPool_&quot;</span>);</span><br><span class="line">        <span class="comment">// rejection-policy：当pool已经达到max size的时候，如何处理新任务</span></span><br><span class="line">        <span class="comment">// CALLER_RUNS：不在新线程中执行任务，而是由调用者所在的线程来执行</span></span><br><span class="line">        <span class="comment">// 对拒绝task的处理策略</span></span><br><span class="line">        executor.setRejectedExecutionHandler(<span class="keyword">new</span> ThreadPoolExecutor.CallerRunsPolicy());</span><br><span class="line">        <span class="comment">// 线程空闲后的最大存活时间</span></span><br><span class="line">        executor.setKeepAliveSeconds(<span class="number">60</span>);</span><br><span class="line">        <span class="comment">// 加入mdc</span></span><br><span class="line">        executor.setTaskDecorator(<span class="keyword">new</span> MdcTaskDecorator());</span><br><span class="line">        executor.initialize();</span><br><span class="line">        <span class="keyword">return</span> executor;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Owen</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://bohemiansun.github.io/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/">https://bohemiansun.github.io/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://bohemiansun.github.io" target="_blank">Stray Birds</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%9A%E7%BA%BF%E7%A8%8B.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2021/02/24/Hexo/"><img class="next-cover" src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/imgbulang.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Hexo进阶设置</div></div></a></div></nav></div><div class="aside_content" id="aside_content"><div class="card-widget card-info"><div class="card-content"><div class="card-info-avatar is-center"><img class="avatar-img" src="/null" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%B4%E5%83%8F%E7%8C%AB.jpg'" alt="avatar"/><div class="author-info__name">Owen</div><div class="author-info__description">嗯哼</div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/BohemianSun"><i class="fab fa-github"></i><span>Follow Me</span></a></div></div><div class="card-widget card-announcement"><div class="card-content"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">无关职业 无关爱好 只是需要这样一个地方 记录些点点滴滴</div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="card-content"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor"><span class="toc-number">1.</span> <span class="toc-text">ThreadPoolTaskExecutor和ThreadPoolExecutor</span></a></li></ol></div></div></div><div class="card-widget card-recent-post"><div class="card-content"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/" title="ThreadPoolTaskExecutor和ThreadPoolExecutor"><img src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E5%A4%9A%E7%BA%BF%E7%A8%8B.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="ThreadPoolTaskExecutor和ThreadPoolExecutor"/></a><div class="content"><a class="title" href="/2021/02/25/ThreadPoolTaskExecutor%E5%92%8CThreadPoolExecutor%E5%8C%BA%E5%88%AB/" title="ThreadPoolTaskExecutor和ThreadPoolExecutor">ThreadPoolTaskExecutor和ThreadPoolExecutor</a><time datetime="2021-02-25T06:16:00.450Z" title="发表于 2021-02-25 14:16:00">2021-02-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/02/24/Hexo/" title="Hexo进阶设置"><img src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/imgbulang.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Hexo进阶设置"/></a><div class="content"><a class="title" href="/2021/02/24/Hexo/" title="Hexo进阶设置">Hexo进阶设置</a><time datetime="2021-02-24T06:59:24.069Z" title="发表于 2021-02-24 14:59:24">2021-02-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/02/24/chmod%E6%97%A0%E6%9D%83%E9%99%90%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/" title="chmod无权限解决办法"><img src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/imglinux1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="chmod无权限解决办法"/></a><div class="content"><a class="title" href="/2021/02/24/chmod%E6%97%A0%E6%9D%83%E9%99%90%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/" title="chmod无权限解决办法">chmod无权限解决办法</a><time datetime="2021-02-24T06:34:15.656Z" title="发表于 2021-02-24 14:34:15">2021-02-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/01/30/%E5%BC%80%E5%8F%91%E8%A7%84%E8%8C%83/" title="后端开发规范"><img src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/imgjava1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="后端开发规范"/></a><div class="content"><a class="title" href="/2021/01/30/%E5%BC%80%E5%8F%91%E8%A7%84%E8%8C%83/" title="后端开发规范">后端开发规范</a><time datetime="2021-01-30T04:35:38.256Z" title="发表于 2021-01-30 12:35:38">2021-01-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2020/12/23/%E9%A3%9E%E9%B8%9F%E9%9B%86/" title="飞鸟集"><img src="https://raw.githubusercontent.com/BohemianSun/ImageCloud/main/img%E9%A3%9E%E9%B8%9F%E9%9B%86.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="飞鸟集"/></a><div class="content"><a class="title" href="/2020/12/23/%E9%A3%9E%E9%B8%9F%E9%9B%86/" title="飞鸟集">飞鸟集</a><time datetime="2020-12-23T09:39:34.128Z" title="发表于 2020-12-23 17:39:34">2020-12-23</time></div></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/xueshan.jpg)"><div id="footer-wrap"><div class="copyright">&copy;Tue Dec 01 2020 08:00:00 GMT+0800 (GMT+08:00) - 2021 By Owen</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script></div></body></html>
